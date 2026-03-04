@@ -3,32 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Estoque Simplificado</title>
+    <title>Estoque Inteligente | Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .status-badge { padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+    </style>
 </head>
-<body class="bg-gray-50 flex flex-col min-h-screen">
+<body class="bg-slate-50 text-slate-900 min-h-screen">
 
-    <header class="bg-blue-700 text-white shadow-md p-6">
-        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <h1 class="text-2xl font-bold">Estoque Geral</h1>
-            <input type="text" id="busca" placeholder="Filtrar operadora ou data..." 
-                class="w-full md:w-80 p-2 rounded-lg text-gray-800 outline-none focus:ring-4 focus:ring-blue-300 transition">
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">E</div>
+                    <span class="text-lg font-bold tracking-tight text-slate-800">Estoque<span class="text-blue-600">Pro</span></span>
+                </div>
+                <div class="relative w-1/3 hidden md:block">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </span>
+                    <input type="text" id="busca" placeholder="Pesquisar operadora, quantidade..." 
+                        class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all sm:text-sm">
+                </div>
+            </div>
         </div>
-    </header>
+    </nav>
 
-    <main class="flex-grow p-4 md:p-8">
-        <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-            <div id="loading" class="p-20 text-center">
-                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent mb-4"></div>
-                <p class="text-gray-500">Buscando dados atualizados...</p>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-sm font-medium text-slate-500 uppercase">Total em Estoque</p>
+                <h3 id="card-total" class="text-3xl font-bold text-slate-800 mt-1">--</h3>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <p class="text-sm font-medium text-slate-500 uppercase">Última Atualização</p>
+                <h3 id="card-data" class="text-lg font-semibold text-slate-700 mt-2">--</h3>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 italic text-slate-400 text-sm flex items-center">
+                Sincronizado com Google Sheets em tempo real.
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-800">Listagem de Materiais</h2>
+                <button onclick="obterDados()" class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Atualizar
+                </button>
             </div>
 
-            <div id="tabela-container" class="hidden overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-100 border-b-2 border-gray-200">
-                        <tr id="cabecalho"></tr>
+            <div id="loading" class="py-20 text-center">
+                <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent mb-4"></div>
+                <p class="text-slate-500 font-medium">Carregando inventário...</p>
+            </div>
+
+            <div id="tabela-container" class="hidden custom-scrollbar overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr id="cabecalho" class="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider">
+                            </tr>
                     </thead>
-                    <tbody id="corpo-tabela" class="divide-y divide-gray-100"></tbody>
+                    <tbody id="corpo-tabela" class="divide-y divide-slate-100 text-sm text-slate-600">
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -39,6 +84,9 @@
         let dadosOriginais = [];
 
         async function obterDados() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('tabela-container').classList.add('hidden');
+            
             try {
                 const res = await fetch(API_URL);
                 dadosOriginais = await res.json();
@@ -47,35 +95,54 @@
                 document.getElementById('tabela-container').classList.remove('hidden');
                 
                 renderizar(dadosOriginais);
+                atualizarCards(dadosOriginais);
             } catch (err) {
-                document.getElementById('loading').innerHTML = `<p class="text-red-500">Erro ao carregar. Verifique a permissão do Script.</p>`;
+                document.getElementById('loading').innerHTML = `<p class="text-red-500 p-10">⚠️ Erro ao conectar com a base de dados.</p>`;
+            }
+        }
+
+        function atualizarCards(dados) {
+            // Soma simples da coluna QUANTIDADE (assumindo que o nome da coluna é QUANTIDADE)
+            const total = dados.reduce((acc, curr) => acc + (Number(curr.QUANTIDADE) || 0), 0);
+            document.getElementById('card-total').innerText = total.toLocaleString();
+            
+            if(dados.length > 0) {
+                // Pega a data da primeira linha (DATA ATUALIZAÇÃO)
+                const dataRaw = dados[0]['DATA ATUALIZAÇÃO'] || '--';
+                document.getElementById('card-data').innerText = dataRaw;
             }
         }
 
         function renderizar(dados) {
             const head = document.getElementById('cabecalho');
             const body = document.getElementById('corpo-tabela');
-            
             head.innerHTML = '';
             body.innerHTML = '';
 
             if (dados.length > 0) {
-                // Criar colunas
                 Object.keys(dados[0]).forEach(col => {
                     const th = document.createElement('th');
-                    th.className = "p-4 font-bold text-gray-700 uppercase text-xs";
+                    th.className = "px-6 py-4 font-semibold";
                     th.innerText = col;
                     head.appendChild(th);
                 });
 
-                // Criar linhas
                 dados.forEach(item => {
                     const tr = document.createElement('tr');
-                    tr.className = "hover:bg-blue-50 transition";
-                    Object.values(item).forEach(val => {
+                    tr.className = "hover:bg-slate-50 transition-colors group";
+                    
+                    Object.entries(item).forEach(([key, val]) => {
                         const td = document.createElement('td');
-                        td.className = "p-4 text-sm text-gray-600";
-                        td.innerText = val;
+                        td.className = "px-6 py-4 whitespace-nowrap";
+                        
+                        // Estilo especial para Operadora ou Quantidade
+                        if(key.toLowerCase() === 'operadora') {
+                            td.innerHTML = `<span class="font-bold text-slate-800">${val}</span>`;
+                        } else if(key.toLowerCase() === 'quantidade') {
+                            td.innerHTML = `<span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-mono font-bold">${val}</span>`;
+                        } else {
+                            td.innerText = val || '-';
+                        }
                         tr.appendChild(td);
                     });
                     body.appendChild(tr);
