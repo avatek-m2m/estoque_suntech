@@ -13,6 +13,8 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .glass-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #e2e8f0; }
+        @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spin-anim { animation: spin-once 0.5s ease-in-out; }
     </style>
 </head>
 <body class="bg-[#f8fafc] text-slate-900 min-h-screen pb-10">
@@ -55,15 +57,23 @@
         </div>
 
         <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+            <div class="px-8 py-4 bg-white border-b border-slate-100 flex justify-between items-center">
+                <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Detalhamento de Itens</h2>
+                <button onclick="atualizarManual()" id="btn-sync" class="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all group">
+                    <svg id="icon-sync" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Sincronizar Agora
+                </button>
+            </div>
+
             <div id="loading" class="py-20 text-center">
                 <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent mb-4"></div>
                 <p class="text-slate-500 font-medium animate-pulse">Consultando Planilha...</p>
             </div>
 
             <div id="tabela-container" class="hidden custom-scrollbar overflow-x-auto">
-                <table class="w-full text-left">
+                <table class="w-full text-left border-separate border-spacing-0">
                     <thead>
-                        <tr id="cabecalho" class="bg-slate-50/80 border-b border-slate-100 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
+                        <tr id="cabecalho" class="bg-slate-50/80 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
                             </tr>
                     </thead>
                     <tbody id="corpo-tabela" class="divide-y divide-slate-50 text-sm text-slate-600">
@@ -93,12 +103,32 @@
             }
         }
 
+        async function atualizarManual() {
+            const btn = document.getElementById('btn-sync');
+            const icon = document.getElementById('icon-sync');
+            
+            // Efeito visual de loading
+            btn.classList.add('opacity-50', 'pointer-events-none');
+            icon.classList.add('spin-anim');
+            
+            // Esconde a tabela e mostra o loading para clareza
+            document.getElementById('tabela-container').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            
+            await obterDados();
+            
+            // Remove as animações após terminar
+            setTimeout(() => {
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+                icon.classList.remove('spin-anim');
+            }, 500);
+        }
+
         function atualizarDashboard(dados) {
             const total = dados.reduce((acc, curr) => acc + (Number(curr.QUANTIDADE) || 0), 0);
             document.getElementById('card-total').innerText = total.toLocaleString();
             document.getElementById('card-data').innerText = `Atualizado em: ${dados[0]['DATA ATUALIZAÇÃO'] || '--'}`;
 
-            // Preparar dados para os gráficos
             const operadoras = [...new Set(dados.map(d => d.OPERADORA))];
             const quantidades = operadoras.map(op => {
                 return dados.filter(d => d.OPERADORA === op).reduce((acc, curr) => acc + (Number(curr.QUANTIDADE) || 0), 0);
@@ -126,7 +156,7 @@
                         borderWidth: 0
                     }]
                 },
-                options: { plugins: { legend: { display: false } }, cutout: '70%' }
+                options: { plugins: { legend: { display: false } }, cutout: '70%', maintainAspectRatio: false }
             });
 
             chartBar = new Chart(ctxBar, {
@@ -142,7 +172,8 @@
                 },
                 options: {
                     indexAxis: 'y',
-                    scales: { x: { display: false }, y: { grid: { display: false } } },
+                    maintainAspectRatio: false,
+                    scales: { x: { display: false }, y: { grid: { display: false }, ticks: { font: { size: 9, weight: 'bold' } } } },
                     plugins: { legend: { display: false } }
                 }
             });
@@ -157,14 +188,14 @@
             if (dados.length > 0) {
                 Object.keys(dados[0]).forEach(col => {
                     const th = document.createElement('th');
-                    th.className = "px-8 py-4 font-bold uppercase";
+                    th.className = "px-8 py-4 font-bold uppercase border-b border-slate-100";
                     th.innerText = col;
                     head.appendChild(th);
                 });
 
                 dados.forEach(item => {
                     const tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-50 transition-colors";
+                    tr.className = "hover:bg-slate-50 transition-colors group border-b border-slate-50";
                     
                     Object.entries(item).forEach(([key, val]) => {
                         const td = document.createElement('td');
@@ -175,11 +206,11 @@
                         if(key.toLowerCase() === 'operadora') {
                             let badge = '';
                             if (valUpper.includes('EMNIFY VERDE')) {
-                                badge = `<span class="text-[10px] text-emerald-600 font-bold block mt-1">● Single IMSI Claro</span>`;
+                                badge = `<span class="text-[10px] text-emerald-600 font-bold block mt-1 tracking-tight italic">● Single IMSI Claro</span>`;
                             } else if (valUpper.includes('EMNIFY AZUL')) {
-                                badge = `<span class="text-[10px] text-blue-500 font-bold block mt-1">● Multi IMSI Claro, Vivo e Tim</span>`;
+                                badge = `<span class="text-[10px] text-blue-500 font-bold block mt-1 tracking-tight italic">● Multi IMSI Claro, Vivo e Tim</span>`;
                             }
-                            td.innerHTML = `<span class="font-bold text-slate-800">${val}</span>${badge}`;
+                            td.innerHTML = `<span class="font-bold text-slate-800 tracking-tight">${val}</span>${badge}`;
                         } else if(key.toLowerCase() === 'quantidade') {
                             td.innerHTML = `<span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold border border-blue-100">${val}</span>`;
                         } else {
@@ -200,6 +231,7 @@
             renderizar(filtrados);
         });
 
+        // Inicialização
         obterDados();
     </script>
 </body>
