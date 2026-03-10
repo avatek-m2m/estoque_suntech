@@ -59,6 +59,10 @@
                         <span class="text-xs font-semibold text-slate-500">Avatek:</span>
                         <span id="total-avatek" class="text-2xl font-black text-blue-600">--</span>
                     </div>
+                    <div class="flex justify-between items-baseline mt-1 border-t border-slate-100 pt-1">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Diferença:</span>
+                        <span id="total-diff" class="text-sm font-bold">--</span>
+                    </div>
                 </div>
                 <p id="card-data" class="text-[9px] text-slate-400 mt-3 font-medium italic">Sincronizando...</p>
             </div>
@@ -100,7 +104,7 @@
 
     <script>
         const API_SUNTECH = 'https://script.google.com/macros/s/AKfycbzbAVOPYHCYXlmuEN-47XhAJU0p18GrPTPL3bQKJpIK0JUKuoi49jP4CytOBoQYezIKgg/exec';
-        const API_AVATEK = 'https://script.google.com/macros/s/AKfycbyYzmgz9tkgy1nk84l2E1JddDk7qwRRQO33ZritHPUtzcojmerAkO6Gop25P1EpVaDwVA/exec'; // <--- INSIRA A URL AQUI
+        const API_AVATEK = 'https://script.google.com/macros/s/AKfycbyYzmgz9tkgy1nk84l2E1JddDk7qwRRQO33ZritHPUtzcojmerAkO6Gop25P1EpVaDwVA/exec';
 
         let dadosSuntech = [];
         let chartPie, chartBar;
@@ -157,9 +161,18 @@
             const totalSun = sun.reduce((acc, curr) => acc + (Number(curr.QUANTIDADE) || 0), 0);
             const totalAva = ava.filter(i => String(i.STATUS).trim().toUpperCase() === 'FALTA UTILIZAR')
                                 .reduce((acc, curr) => acc + (Number(curr.QUANTIDADE) || 0), 0);
+            
+            // Cálculo da diferença total
+            const diffTotal = totalAva - totalSun;
+            const elDiff = document.getElementById('total-diff');
 
             document.getElementById('total-suntech').innerText = totalSun.toLocaleString();
             document.getElementById('total-avatek').innerText = totalAva.toLocaleString();
+            
+            // Atualização visual da diferença no card
+            elDiff.innerText = (diffTotal > 0 ? '+' : '') + diffTotal.toLocaleString();
+            elDiff.className = `text-sm font-bold ${diffTotal === 0 ? 'text-slate-400' : (diffTotal < 0 ? 'text-rose-500' : 'text-emerald-500')}`;
+
             document.getElementById('card-data').innerText = `Ref. Suntech: ${sun[0]['DATA ATUALIZAÇÃO'] || '--'}`;
 
             const operadoras = [...new Set(sun.map(d => String(d.OPERADORA).trim()))];
