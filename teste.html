@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoque Pro | Comparativo de Bases</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .glass-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #e2e8f0; }
+        @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spin-anim { animation: spin-once 0.5s ease-in-out; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-900 min-h-screen pb-10">
+
+    <nav class="sticky top-0 z-50 glass-nav">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 text-white font-bold text-xl">E</div>
+                    <span class="text-lg font-bold block leading-none">Estoque<span class="text-blue-600">Pro</span></span>
+                </div>
+                <div class="relative w-1/3">
+                    <input type="text" id="busca" placeholder="Filtrar analítico..." 
+                        class="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="mb-6">
+            <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                Comparativo: Original vs Nova (Falta Utilizar)
+            </h2>
+            <div id="grid-comparativo" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 animate-pulse text-slate-300 text-xs">Carregando comparação...</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Base Original</p>
+                <h3 id="card-total" class="text-4xl font-black text-slate-800 mt-1">--</h3>
+                <p id="card-data" class="text-[10px] text-slate-400 mt-2 font-medium italic">Sincronizando...</p>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center min-h-[160px]">
+                <canvas id="chartPie" style="max-height: 120px; width: 100%;"></canvas>
+                <p class="text-[10px] font-bold text-slate-400 uppercase mt-2 tracking-tighter">Share Operadoras (Original)</p>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm col-span-1 md:col-span-2 min-h-[160px]">
+                <canvas id="chartBar" style="max-height: 140px; width: 100%;"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+            <div class="px-8 py-5 bg-white border-b border-slate-100 flex justify-between items-center">
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-[0.15em]">Lista Detalhada (Base Original)</h2>
+                <button onclick="obterDados()" id="btn-sync" class="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-bold uppercase hover:bg-blue-600 hover:text-white transition-all group shadow-sm">
+                    <svg id="icon-sync" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Atualizar Bases
+                </button>
+            </div>
+
+            <div id="loading" class="py-24 text-center">
+                <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent mb-4"></div>
+                <p class="text-slate-400 text-sm font-medium animate-pulse">Sincronizando planilhas...</p>
+            </div>
+
+            <div id="tabela-container" class="hidden custom-scrollbar overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50/50 sticky top-0 z-10 border-b border-slate-100">
+                        <tr id="cabecalho" class="text-slate-400 text-[10px] uppercase font-bold tracking-widest"></tr>
+                    </thead>
+                    <tbody id="corpo-tabela" class="divide-y divide-slate-50 text-sm text-slate-600"></tbody>
+                </table>
+            </div>
+            <div id="no-results" class="hidden py-20 text-center text-slate-400 italic">Nenhum resultado encontrado.</div>
+        </div>
+    </main>
+
+    <script>
+        // --- CONFIGURAÇÃO DAS URLs ---
+        const URL_ORIGINAL = 'https://script.google.com/macros/s/AKfycbzbAVOPYHCYXlmuEN-47XhAJU0p18GrPTPL3bQKJpIK0JUKuoi49jP4CytOBoQYezIKgg/exec';
+        const URL_NOVA = 'https://script.google.com/macros/s/AKfycbytsB1_kJwHOAlw9iu6oFFfF98v0Ppw1LVkqlEm2urPufd78kwq7358Yv0aw1ETgyIc-g/exec';
+
+        let dadosOriginaisGlobal = [];
+        let chartPie, chartBar;
+
+        const MAPA_CORES = {
+            'VIVO': '#662d91',
+            'CLARO': '#ee1d23',
+            'TIM': '#003399',
+            'EMNIFY AZUL': '#007bff',
+            'EMNIFY VERDE': '#10b981',
+            'LINKSFIELD': '#00aeef',
+            'ESEYE': '#ff6600',
+            'DEFAULT': '#cbd5e1'
+        };
+
+        // Função para casar os nomes entre as bases
+        function normalizarOperadora(nome) {
+            const n = String(nome).toUpperCase().trim();
+            if (n === 'EMNIFY CLARO') return 'EMNIFY VERDE';
+            if (n === 'EMNIFY MULTI') return 'EMNIFY AZUL';
+            return n;
+        }
+
+        async function obterDados() {
+            const btn = document.getElementById('btn-sync');
+            const icon = document.getElementById('icon-sync');
+            btn.classList.add('opacity-50', 'pointer-events-none');
+            icon.classList.add('spin-anim');
+            
+            try {
+                // Busca dados das duas planilhas simultaneamente
+                const [resOrig, resNova] = await Promise.all([
+                    fetch(URL_ORIGINAL).then(r => r.json()),
+                    fetch(URL_NOVA).then(r => r.json())
+                ]);
+
+                dadosOriginaisGlobal = resOrig;
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('tabela-container').classList.remove('hidden');
+
+                renderizarComparativo(resOrig, resNova);
+                renderizarTabela(resOrig);
+                atualizarDashboard(resOrig);
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').innerHTML = `<p class="text-red-500 font-bold">⚠️ Erro na conexão com as planilhas.</p>`;
+            } finally {
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+                setTimeout(() => icon.classList.remove('spin-anim'), 500);
+            }
+        }
+
+        function renderizarComparativo(baseOrig, baseNova) {
+            const container = document.getElementById('grid-comparativo');
+            container.innerHTML = '';
+            
+            const resumo = {};
+
+            // Soma quantidades da Base Original
+            baseOrig.forEach(item => {
+                const op = normalizarOperadora(item.OPERADORA);
+                if (!resumo[op]) resumo[op] = { original: 0, nova: 0 };
+                resumo[op].original += (Number(item.QUANTIDADE) || 0);
+            });
+
+            // Soma quantidades da Base Nova (Filtra por STATUS "FALTA UTILIZAR")
+            baseNova.forEach(item => {
+                if (String(item.STATUS).toUpperCase().trim() === 'FALTA UTILIZAR') {
+                    const op = normalizarOperadora(item.OPERADORA);
+                    if (!resumo[op]) resumo[op] = { original: 0, nova: 0 };
+                    resumo[op].nova += (Number(item.QUANTIDADE) || 0);
+                }
+            });
+
+            // Renderiza os cards de comparação
+            Object.entries(resumo).forEach(([op, valores]) => {
+                const dif = valores.nova - valores.original;
+                const corDif = dif === 0 ? 'text-emerald-500' : (dif < 0 ? 'text-rose-500' : 'text-amber-500');
+                const sinal = dif > 0 ? '+' : '';
+
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-200 transition-colors">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">${op}</span>
+                            <span class="text-[10px] font-bold ${corDif} bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">${sinal}${dif}</span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-black text-slate-800">${valores.original}</span>
+                            <span class="text-slate-300 text-xs font-bold">/ ${valores.nova}</span>
+                        </div>
+                        <p class="text-[9px] text-slate-400 mt-1 font-medium">Orig. vs Nova (Falta Utilizar)</p>
+                    </div>
+                `;
+            });
+        }
+
+        function atualizarDashboard(dados) {
+            const total = dados.reduce((acc, curr) => acc + (Number(curr.QUANTIDADE) || 0), 0);
+            document.getElementById('card-total').innerText = total.toLocaleString();
+            document.getElementById('card-data').innerText = `Atualizado: ${dados[0]['DATA ATUALIZAÇÃO'] || '--'}`;
+
+            const operadoras = [...new Set(dados.map(d => String(d.OPERADORA).trim()))];
+            const quantidades = operadoras.map(op => {
+                return dados.filter(d => String(d.OPERADORA).trim() === op).reduce((acc, curr) => acc + (Number(curr.QUANTIDADE) || 0), 0);
+            });
+
+            renderCharts(operadoras, quantidades);
+        }
+
+        function renderCharts(labels, data) {
+            const ctxPie = document.getElementById('chartPie').getContext('2d');
+            const ctxBar = document.getElementById('chartBar').getContext('2d');
+            if(chartPie) chartPie.destroy();
+            if(chartBar) chartBar.destroy();
+
+            const coresFatias = labels.map(l => MAPA_CORES[l.toUpperCase()] || MAPA_CORES['DEFAULT']);
+
+            chartPie = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: coresFatias, borderWidth: 2, borderColor: '#ffffff' }] },
+                options: { plugins: { legend: { display: false } }, cutout: '75%', maintainAspectRatio: false }
+            });
+
+            chartBar = new Chart(ctxBar, {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ label: 'Qtd Original', data: data, backgroundColor: coresFatias, borderRadius: 6 }] },
+                options: {
+                    indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    scales: { 
+                        x: { display: false }, 
+                        y: { grid: { display: false }, ticks: { font: { size: 10, weight: '700' }, color: '#64748b' } } 
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function renderizarTabela(dados) {
+            const head = document.getElementById('cabecalho');
+            const body = document.getElementById('corpo-tabela');
+            const noRes = document.getElementById('no-results');
+            head.innerHTML = ''; body.innerHTML = '';
+
+            if (dados.length === 0) {
+                noRes.classList.remove('hidden');
+                return;
+            }
+            noRes.classList.add('hidden');
+
+            // Gera cabeçalho
+            Object.keys(dados[0]).forEach(col => {
+                const th = document.createElement('th');
+                th.className = "px-8 py-4 font-bold uppercase";
+                th.innerText = col;
+                head.appendChild(th);
+            });
+
+            // Gera corpo
+            dados.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50";
+                
+                Object.entries(item).forEach(([key, val]) => {
+                    const td = document.createElement('td');
+                    td.className = "px-8 py-4 whitespace-nowrap font-medium";
+                    
+                    const valUpper = String(val).toUpperCase();
+
+                    if(key.toLowerCase() === 'operadora') {
+                        let info = '';
+                        if (valUpper.includes('EMNIFY VERDE')) info = `<span class="text-[10px] text-emerald-600 font-bold block mt-1 leading-none">● Single IMSI Claro</span>`;
+                        else if (valUpper.includes('EMNIFY AZUL')) info = `<span class="text-[10px] text-blue-500 font-bold block mt-1 leading-none">● Multi IMSI Global</span>`;
+                        td.innerHTML = `<span class="text-slate-900 font-bold tracking-tight">${val}</span>${info}`;
+                    } else if(key.toLowerCase() === 'quantidade') {
+                        td.innerHTML = `<span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold border border-blue-100">${val}</span>`;
+                    } else {
+                        td.innerText = val || '-';
+                    }
+                    tr.appendChild(td);
+                });
+                body.appendChild(tr);
+            });
+        }
+
+        document.getElementById('busca').addEventListener('input', (e) => {
+            const termo = e.target.value.toLowerCase();
+            const filtrados = dadosOriginaisGlobal.filter(obj => 
+                Object.values(obj).some(v => String(v).toLowerCase().includes(termo))
+            );
+            renderizarTabela(filtrados);
+        });
+
+        obterDados();
+    </script>
+</body>
+</html>
